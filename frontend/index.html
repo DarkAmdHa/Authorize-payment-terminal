@@ -132,13 +132,18 @@
         font-size: 12px;
       }
 
-      input:not([type='radio']) {
+      input:not([type='radio']),
+      select.form-control {
         width: 245px;
         border-radius: 7px;
         padding: 7px 10px;
         border: 2.5px solid transparent;
         transition: 0.5s ease;
         outline: none;
+      }
+
+      select.form-control {
+        width: 270px;
       }
 
       input:not([type='radio']):focus {
@@ -151,7 +156,7 @@
 
       .exp-container,
       .card-radio-container {
-        width: 265px;
+        width: 270px;
         display: flex;
         gap: 5px;
         align-items: center;
@@ -215,7 +220,7 @@
             Monthly Membership <br /><span class="h2">$250/Month</span>
           </p>
         </div>
-        <form class="user-details" method="POST" action="/sign-up">
+        <form class="user-details">
           <div class="billing-detail-inputs-container">
             <h2 class="form-title">Billing Details</h2>
             <div class="form-container">
@@ -589,9 +594,9 @@
                 <label for="state-province">State/Province</label>
                 <select
                   name="state"
-                  id="state"
-                  class="long-field"
-                  onchange="checkFieldBack(this);"
+                  id="state-province"
+                  class="form-control"
+                  required
                 >
                   <option value="">Please Select</option>
                   <optgroup label="Australian Provinces">
@@ -729,6 +734,7 @@
                       name="card-type"
                       value="Visa"
                       class="form-input"
+                      required
                     />
                     <img src="ico_visa.jpg" alt="Visa Card" />
                   </div>
@@ -739,6 +745,7 @@
                       name="card-type"
                       value="Mastercard"
                       class="form-input"
+                      required
                     />
                     <img src="ico_mc.jpg" alt="MasterCard" />
                   </div>
@@ -749,6 +756,7 @@
                       name="card-type"
                       value="American Express"
                       class="form-input"
+                      required
                     />
                     <img src="ico_amex.jpg" alt="American Express" />
                   </div>
@@ -759,6 +767,7 @@
                       name="card-type"
                       value="Discover"
                       class="form-input"
+                      required
                     />
                     <img src="ico_disc.jpg" alt="Discover" />
                   </div>
@@ -783,6 +792,7 @@
                     id="card-number"
                     name="card-number"
                     class="form-input"
+                    required
                   />
                 </div>
                 <div class="input-group">
@@ -793,6 +803,7 @@
                     name="card-name"
                     class="form-input"
                     placeholder="John Doe"
+                    required
                   />
                 </div>
                 <div class="input-group">
@@ -805,6 +816,7 @@
                       class="form-input exp-input"
                       placeholder="MM"
                       maxlength="4"
+                      required
                     />
                     <input
                       type="text"
@@ -813,12 +825,20 @@
                       class="form-input exp-input"
                       placeholder="YYYY"
                       maxlength="4"
+                      required
                     />
                   </div>
                 </div>
                 <div class="input-group">
                   <label for="cvv">CVV</label>
-                  <input type="text" id="cvv" name="cvv" class="form-input" />
+                  <input
+                    type="text"
+                    id="cvv"
+                    name="cvv"
+                    class="form-input"
+                    maxlength="3"
+                    required
+                  />
                 </div>
               </div>
             </div>

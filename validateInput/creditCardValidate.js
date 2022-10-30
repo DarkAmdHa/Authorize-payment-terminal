@@ -3,13 +3,13 @@
 import validator from 'validator'
 
 const validateForm = (req) => {
-  const { cc, cvv, expire, amount } = req.body
+  const { cardNumber, cvv, expirationDate } = req.body
 
   const errors = []
 
-  if (!validator.isCreditCard(cc)) {
+  if (!validator.isCreditCard(cardNumber)) {
     errors.push({
-      param: 'cc',
+      param: 'cardNumber',
       msg: 'Invalid credit card number.',
     })
   }
@@ -21,17 +21,10 @@ const validateForm = (req) => {
     })
   }
 
-  if (!/^\d{4}$/.test(expire)) {
+  if (!/^\d{4}$/.test(expirationDate)) {
     errors.push({
-      param: 'expire',
+      param: 'expirationDate',
       msg: 'Invalid expiration date.',
-    })
-  }
-
-  if (!validator.isDecimal(amount)) {
-    errors.push({
-      param: 'amount',
-      msg: 'Invalid amount.',
     })
   }
 
