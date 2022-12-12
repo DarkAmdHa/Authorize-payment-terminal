@@ -44,9 +44,82 @@ const validateOnEnter = (target, extraValidation) => {
     .addEventListener('paste', (e) => e.preventDefault())
 }
 
-const errorMsg = (error) => {
-  console.log(error)
+const errorMsg = (error, target) => {
+  const errorMessageDiv = document.createElement('div')
+  errorMessageDiv.classList.add('error')
+  errorMessageDiv.innerText = error
+  document
+    .querySelector(`${target}`)
+    .parentElement.insertBefore(
+      errorMessageDiv,
+      document.querySelector(`${target}`)
+    )
 }
+
+const loadingToggler = () => {
+  if (document.querySelector('.loader').classList.contains('displayed')) {
+    setTimeout(() => {
+      document.querySelector('.loader').classList.remove('displayed')
+    }, 1000)
+  } else {
+    document.querySelector('.loader').classList.add('displayed')
+  }
+}
+
+const deleteError = (target) => {
+  if (target === 'all') {
+    document
+      .querySelectorAll('.error')
+      .forEach((error) => error.parentElement.removeChild(error))
+  } else {
+    if (target.parentElement.querySelector(`.error`)) {
+      target.parentElement.removeChild(
+        target.parentElement.querySelector(`.error`)
+      )
+    }
+  }
+}
+
+//Modal Code
+const closeMakeYourOwnModal = (e) => {
+  e.preventDefault()
+  document.querySelector('.makeYourOwnModal').classList.remove('is-visible')
+  document.querySelector('.PageOverlay').classList.remove('is-visible')
+  document.querySelector('html').classList.remove('no-scroll')
+  setTimeout(() => {
+    document.querySelector('.makeYourOwnModal').style.display = 'none'
+  }, 500)
+  document.querySelector('.PageOverlay').removeEventListener('click', (e) => {
+    if (!document.querySelector('.makeYourOwnModal').contains(e.target)) {
+      closeMakeYourOwnModal(e)
+    }
+  })
+}
+
+const openModal = (closable) => {
+  document.querySelector('.PageOverlay').classList.add('is-visible')
+  document.querySelector('.makeYourOwnModal').style.display = 'block'
+  document.querySelector('html').classList.add('no-scroll')
+  setTimeout(() => {
+    document.querySelector('.makeYourOwnModal').classList.add('is-visible')
+    if (closable) {
+      document.querySelector('.PageOverlay').addEventListener('click', (e) => {
+        if (!document.querySelector('.makeYourOwnModal').contains(e.target)) {
+          closeMakeYourOwnModal(e)
+        }
+      })
+      document
+        .querySelector('.makeYourOwnModal .closeMakeYourOwnModal')
+        .addEventListener('click', closeMakeYourOwnModal)
+    }
+  }, 500)
+}
+
+document.querySelectorAll('input').forEach((input) => {
+  input.addEventListener('input', (e) => {
+    deleteError(e.target)
+  })
+})
 
 validateOnEnter('#card-number')
 validateOnEnter('#zip-code')
@@ -103,6 +176,18 @@ document.querySelector('#card-number').addEventListener('input', (e) => {
   }
 })
 
+const signUpRequest = async (formData) => {
+  const response = await fetch('/sign-up', {
+    body: JSON.stringify(formData),
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+    },
+  })
+
+  return response.json()
+}
+
 document
   .querySelectorAll(`.card-radio-container #card-type`)
   .forEach((cardRadio) => {
@@ -141,7 +226,7 @@ document
 const mainForm = document.querySelector('form.user-details')
 document.querySelector('form.user-details').addEventListener('submit', (e) => {
   e.preventDefault()
-
+  deleteError('all')
   const expirationDate =
     mainForm.querySelector('input[name="expiration-month"]').value +
     '/' +
@@ -188,8 +273,7 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
   }
   if (
     !mainForm.querySelector('input[name="card-type"]:checked') ||
-    !valid.number(mainForm.querySelector('#card-number').value)
-      .isPotentiallyValid
+    !valid.number(mainForm.querySelector('#card-number').value).isValid
   ) {
     errorArray.push({
       message: 'Please provide a valid card number',
@@ -213,15 +297,15 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
   }
   if (
     mainForm.querySelector('input[name="card-type"]:checked').value ===
-      'Mastercard' &&
-    !valid.cvv(mainForm.querySelector('#cvv').value, 4).isPotentiallyValid
+      'American Express' &&
+    !valid.cvv(mainForm.querySelector('#cvv').value, 4).isValid
   ) {
     errorArray.push({
       message:
         'Please provide a valid digit CID for your American Express card',
       location: '#cvv',
     })
-  } else if (!valid.cvv(mainForm.querySelector('#cvv').value, 3)) {
+  } else if (!valid.cvv(mainForm.querySelector('#cvv').value, 3).isValid) {
     errorArray.push({ message: 'Please provide a valid CVV', location: '#cvv' })
   }
   if (errorArray.length >= 1) {
@@ -230,6 +314,8 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
     })
     return false
   } else {
+    loadingToggler()
+
     // Build formData object.
 
     let jsObjectFormData = {
@@ -248,14 +334,40 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
       cvv: mainForm.querySelector('#cvv').value,
     }
 
-    console.log(jsObjectFormData)
-
-    fetch('/sign-up', {
-      body: JSON.stringify(jsObjectFormData),
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
+    signUpRequest(jsObjectFormData).then((data) => {
+      if (data.errors) {
+        //Handle input error placements
+      } else if (data.error) {
+        document.querySelector('.makeYourOwnModal .title').innerText = 'Error'
+        document
+          .querySelector('.makeYourOwnModal')
+          .classList.remove('is-success')
+        document
+          .querySelector('.makeYourOwnModal')
+          .classList.remove('hideClose')
+        document.querySelector('.makeYourOwnModal').classList.add('is-error')
+        document.querySelector(
+          '.makeYourOwnModal .modalContent'
+        ).innerHTML = `<p>${data.message}</p>`
+        openModal(true)
+      } else if (data.success) {
+        console.log(data)
+        document.querySelector('.makeYourOwnModal .title').innerText = 'Success'
+        document.querySelector('.makeYourOwnModal').classList.add('is-success')
+        document.querySelector('.makeYourOwnModal').classList.remove('is-error')
+        document.querySelector(
+          '.makeYourOwnModal .modalContent'
+        ).innerHTML = `<p>${data.message}</p>`
+        document.querySelector(
+          '.makeYourOwnModal .modalContent'
+        ).innerHTML += `<p>${data.authorizeMessage.message}</p>`
+        document.querySelector(
+          '.makeYourOwnModal .modalContent'
+        ).innerHTML += `<p>Please click <a href='https://craft-farmer-academy.ghost.io/'>here</a> to head to Craft Farmer Accademy.</p>`
+        openModal(false)
+      }
+      document.querySelector('.makeYourOwnModal').classList.add('hideClose')
+      loadingToggler()
     })
   }
 })

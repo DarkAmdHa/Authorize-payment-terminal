@@ -1,27 +1,121 @@
-'use strict'
-
-import validator from 'validator'
+import valid from 'card-validator'
 
 const validateForm = (req) => {
-  const { cardNumber, cvv, expirationDate } = req.body
+  const {
+    firstName,
+    lastName,
+    address,
+    city,
+    country,
+    state,
+    zipCode,
+    email,
+    cardType,
+    cardName,
+    cardNumber,
+    expirationDate,
+    cvv,
+  } = req.body
+
+  var emailRegex =
+    /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/
+
+  function isEmailValid(email) {
+    if (!email) return false
+
+    if (email.length > 254) return false
+
+    var valid = emailRegex.test(email)
+    if (!valid) return false
+
+    // Further checking of some things regex can't handle
+    var parts = email.split('@')
+    if (parts[0].length > 64) return false
+
+    var domainParts = parts[1].split('.')
+    if (
+      domainParts.some(function (part) {
+        return part.length > 63
+      })
+    )
+      return false
+
+    return true
+  }
 
   const errors = []
 
-  if (!validator.isCreditCard(cardNumber)) {
+  if (firstName.length <= 1) {
+    errorArray.push({
+      msg: 'Invalid first name',
+      param: 'input[name="first-name"]',
+    })
+  }
+
+  if (lastName.length <= 1) {
+    errorArray.push({
+      msg: 'Invalid last name',
+      param: 'input[name="last-name"]',
+    })
+  }
+
+  if (address.length <= 3) {
+    errorArray.push({
+      msg: 'Invalid address',
+      param: 'input[name="address"]',
+    })
+  }
+
+  if (city.length <= 1) {
+    errorArray.push({
+      msg: 'Inalid city name',
+      param: 'input[name="city"]',
+    })
+  }
+
+  if (state == '') {
+    errorArray.push({
+      msg: 'Select a State',
+      param: '#state-province',
+    })
+  }
+
+  if (country == '') {
+    errorArray.push({
+      msg: 'Select a Country',
+      param: '#country',
+    })
+  }
+
+  if (zipCode.length < 3) {
+    errorArray.push({
+      msg: 'Invalid zip code',
+      location: '#zip-code',
+    })
+  }
+
+  if (!isEmailValid(email)) {
+    errors.push({
+      param: 'email',
+      msg: 'Invalid email.',
+    })
+  }
+
+  if (!valid.number(cardNumber).isPotentiallyValid) {
     errors.push({
       param: 'cardNumber',
       msg: 'Invalid credit card number.',
     })
   }
 
-  if (!/^\d{3}$/.test(cvv)) {
+  if (!valid.cvv(cvv).isPotentiallyValid) {
     errors.push({
       param: 'cvv',
       msg: 'Invalid CVV code.',
     })
   }
 
-  if (!/^\d{4}$/.test(expirationDate)) {
+  if (!valid.expirationDate(expirationDate).isPotentiallyValid) {
     errors.push({
       param: 'expirationDate',
       msg: 'Invalid expiration date.',

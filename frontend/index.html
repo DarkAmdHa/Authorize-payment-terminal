@@ -96,6 +96,7 @@
         display: flex;
         gap: 10px;
         align-items: center;
+        position: relative;
       }
 
       .card-number-input-container.invalidNumber:after {
@@ -109,8 +110,7 @@
       }
 
       .credit-card-info-form {
-        transition: 0.4s ease;
-        overflow: hidden;
+        transition: 0.4s ease 0.2s;
         max-height: 320px;
         height: fit-content;
         display: flex;
@@ -120,6 +120,7 @@
 
       .credit-card-info-form.paypalSelected {
         max-height: 0;
+        overflow: hidden;
       }
 
       .cc-info-inputs-container .form-container {
@@ -154,6 +155,24 @@
         border-color: red;
       }
 
+      .error {
+        display: inline;
+        width: 100%;
+        border-radius: 25px;
+        font-size: 12px;
+        padding: 0;
+        color: red;
+        font-weight: 300;
+        top: 0;
+        line-height: 1;
+        position: absolute;
+        left: calc(100% + 25px);
+        top: 50%;
+        width: fit-content;
+        min-width: 215px;
+        transform: translateY(-50%);
+      }
+
       .exp-container,
       .card-radio-container {
         width: 270px;
@@ -161,8 +180,11 @@
         gap: 5px;
         align-items: center;
         justify-self: center;
+        position: relative;
       }
 
+      .exp-container,
+      .card-radio-container,
       .card-radio-container > div {
         display: flex;
         gap: 5px;
@@ -204,10 +226,325 @@
         display: block;
         cursor: pointer;
       }
+
+      .loader {
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        width: 100vw;
+        left: 0;
+        opacity: 0;
+        display: flex;
+        visibility: hidden;
+        pointer-events: none;
+        align-items: center;
+        background: #0934007a;
+        justify-content: center;
+        z-index: 999;
+        transition: 0.5s ease opacity;
+      }
+
+      .loader svg {
+        margin: auto;
+        display: block;
+        background: none;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        shape-rendering: auto;
+        width: 100px;
+        z-index: 99;
+        transition: 0.5s ease 0.5s;
+      }
+
+      .loader.displayed svg {
+        visibility: visible;
+        pointer-events: visible;
+        opacity: 1;
+      }
+
+      .loader.displayed {
+        visibility: visible;
+        pointer-events: visible;
+        opacity: 1;
+      }
+
+      /*Modal*/
+      button.makeYourOwnBtn {
+        background: #97228b;
+        color: #fff;
+        color: padd;
+        padding: 10px 25px;
+        text-transform: capitalize;
+        transition: 0.5s ease;
+      }
+
+      button.makeYourOwnBtn:hover {
+        background: #781d6f !important;
+      }
+
+      .makeYourOwnModal {
+        position: fixed;
+        left: 0;
+        width: 1000px;
+        max-width: 90vw;
+        max-height: 80vh;
+        height: auto;
+        overflow: hidden;
+        padding: 20px;
+        background: #2b2b2b;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        transition: 0.5s ease;
+        z-index: 11;
+        border-radius: 25px;
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        display: none;
+      }
+
+      .makeYourOwnModal.is-success {
+        border: 1px solid #00cc33;
+      }
+
+      .makeYourOwnModal.is-error {
+        border: 1px solid hsla(11, 100%, 52.2%, 1);
+      }
+
+      a.closeMakeYourOwnModal {
+        position: absolute;
+        display: block;
+        right: 10px;
+        top: 10px;
+        font-size: 19px;
+        border-radius: 25px;
+        /* padding: 5px; */
+        border: 1px solid #878787;
+        width: 25px;
+        height: 25px;
+        cursor: pointer;
+      }
+
+      a.closeMakeYourOwnModal:before {
+        content: '';
+        width: 80%;
+        height: 1px;
+        background: #878787;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        height: 0.8px;
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      a.closeMakeYourOwnModal:after {
+        content: '';
+        width: 80%;
+        height: 1px;
+        background: #878787;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        height: 0.8px;
+        transform: translate(-50%, -50%) rotate(135deg);
+      }
+
+      .makeYourOwnModal .imageContainer {
+        overflow-y: scroll;
+        height: 90%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+      }
+
+      .makeYourOwnModal:not(.showAllLinks) .colorChartImage {
+        display: none;
+      }
+
+      .makeYourOwnModal.showAllLinks a {
+        cursor: unset;
+      }
+
+      .makeYourOwnModal .colorChartImage.is-visible {
+        display: block;
+      }
+
+      .makeYourOwnModal .colorChartImage img {
+        width: 100%;
+        height: 100%;
+      }
+
+      .makeYourOwnModal.is-visible {
+        opacity: 1;
+        pointer-events: visible;
+        visibility: visible;
+      }
+
+      .makeYourOwnModal:before {
+        content: '';
+        position: absolute;
+        top: calc(35px + 25px);
+        width: 100%;
+        background: #d3d3d3;
+        left: 0;
+        height: 1px;
+      }
+
+      .makeYourOwnModal .title {
+        font-size: 25px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 15px;
+        margin-top: 0;
+      }
+
+      .makeYourOwnModal.hideClose .closeMakeYourOwnModal {
+        display: none;
+      }
+
+      .makeYourOwnModal p {
+        font-weight: 100;
+        font-family: Poppins, 'sans-serif';
+      }
+
+      .PageOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 100vw;
+        z-index: 10;
+        visibility: hidden;
+        opacity: 0;
+        background: #000;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      }
+
+      .PageOverlay.is-visible {
+        opacity: 0.8;
+        visibility: visible;
+      }
+
+      .no-scroll {
+        overflow: hidden;
+      }
+
+      /**/
     </style>
   </head>
   <body>
+    <div class="PageOverlay"></div>
     <main>
+      <div class="loader">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          style="
+            margin: auto;
+            background: none;
+            display: block;
+            shape-rendering: auto;
+            width: 100px;
+            z-index: 99;
+          "
+          width="209px"
+          height="209px"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMid"
+        >
+          <rect x="8.5" y="8.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="36.5" y="8.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.07763975155279502s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="64.5" y="8.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.15527950310559005s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="8.5" y="36.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.5434782608695652s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="64.5" y="36.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.2329192546583851s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="8.5" y="64.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.4658385093167702s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="36.5" y="64.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.3881987577639751s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <rect x="64.5" y="64.5" width="27" height="27" fill="#000000">
+            <animate
+              attributeName="fill"
+              values="#4bb50f;#000000;#000000"
+              keyTimes="0;0.125;1"
+              dur="0.6211180124223602s"
+              repeatCount="indefinite"
+              begin="0.3105590062111801s"
+              calcMode="discrete"
+            ></animate>
+          </rect>
+          <!-- [ldio] generated by https://loading.io/ -->
+        </svg>
+      </div>
       <div class="container">
         <div class="site-title">
           <h1>Craft Farmer Accademy</h1>
@@ -688,13 +1025,13 @@
                   <option value="N/A">Other</option>
                 </select>
                 <!-- <input
-                  type="text"
-                  id="state-province"
-                  name="state-province"
-                  class="form-input"
-                  placeholder="California"
-                  required
-                /> -->
+                      type="text"
+                      id="state-province"
+                      name="state-province"
+                      class="form-input"
+                      placeholder="California"
+                      required
+                    /> -->
               </div>
               <div class="input-group">
                 <label for="zip-code">Zip/Postal Code</label>
@@ -848,6 +1185,12 @@
         </form>
       </div>
     </main>
+
+    <div class="makeYourOwnModal">
+      <h3 class="title">User Created!</h3>
+      <a href="#" class="closeMakeYourOwnModal"></a>
+      <div class="modalContent">lad</div>
+    </div>
   </body>
   <script src="bundle.js"></script>
 </html>
