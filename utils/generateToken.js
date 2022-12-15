@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 
-export default generateToken = () => {
+const generateToken = () => {
   const key = process.env.GHOST_ADMIN_API_KEY
 
   // Split the key into ID and SECRET
@@ -16,3 +16,5 @@ export default generateToken = () => {
 
   return token
 }
+
+export default generateToken

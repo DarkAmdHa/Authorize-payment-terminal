@@ -176,15 +176,60 @@ document.querySelector('#card-number').addEventListener('input', (e) => {
 })
 
 const signUpRequest = async (formData) => {
-  const response = await fetch('/sign-up', {
-    body: JSON.stringify(formData),
-    method: 'POST',
-    headers: {
+  try {
+    const response = await axios.post('/sign-up', formData, {
       'Content-type': 'application/json',
-    },
-  })
+    })
 
-  return response.json()
+    const data = response.data
+    document.querySelector('.makeYourOwnModal .title').innerText = 'Success'
+    document.querySelector('.makeYourOwnModal').classList.add('is-success')
+    document.querySelector('.makeYourOwnModal').classList.remove('is-error')
+    document.querySelector(
+      '.makeYourOwnModal .modalContent'
+    ).innerHTML = `<p>${data.message}</p>`
+    if (data.authorizeMessage) {
+      document.querySelector(
+        '.makeYourOwnModal .modalContent'
+      ).innerHTML += `<p>${data.authorizeMessage.message}</p>`
+      document.querySelector(
+        '.makeYourOwnModal .modalContent'
+      ).innerHTML += `<p>Please click <a href='https://craft-farmer-academy.ghost.io/'>here</a> to head to Craft Farmer Accademy.</p>`
+    } else if (data.refTransferId) {
+      setTimeout(() => {
+        localStorage.setItem(
+          'refTransferId',
+          JSON.stringify(data.refTransferId)
+        )
+        window.location.href = data.secureAcceptanceURL
+      }, 10000)
+    }
+    openModal(false)
+  } catch (error) {
+    if (error.response && error.response.data.errors) {
+      //Handle input error placements
+      const serverSideValidationErrors = error.response.data.errors
+      serverSideValidationErrors.forEach((error) => {
+        errorMsg(error.msg, error.param)
+      })
+    } else {
+      let errorMsg
+      error.response && error.response.data.message != 'undefined'
+        ? (errorMsg = error.response.data.message)
+        : (errorMsg = error.message)
+      document.querySelector('.makeYourOwnModal .title').innerText = 'Error'
+      document.querySelector('.makeYourOwnModal').classList.remove('is-success')
+      document.querySelector('.makeYourOwnModal').classList.remove('hideClose')
+      document.querySelector('.makeYourOwnModal').classList.add('is-error')
+      document.querySelector(
+        '.makeYourOwnModal .modalContent'
+      ).innerHTML = `<p>${errorMsg}</p>`
+      openModal(true)
+    }
+  } finally {
+    document.querySelector('.makeYourOwnModal').classList.add('hideClose')
+    loadingToggler()
+  }
 }
 
 document
@@ -270,42 +315,50 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
       location: '#zip-code',
     })
   }
+
   if (
-    !mainForm.querySelector('input[name="card-type"]:checked') ||
-    !valid.number(mainForm.querySelector('#card-number').value).isValid
+    mainForm.querySelector('input[name="card-type"]:checked').value != 'PayPal'
   ) {
-    errorArray.push({
-      message: 'Please provide a valid card number',
-      location: '#card-number',
-    })
-  }
-  if (
-    !valid.cardholderName(mainForm.querySelector('#card-name').value)
-      .isPotentiallyValid
-  ) {
-    errorArray.push({
-      message: 'Please provide a valid name on the card',
-      location: '#card-name',
-    })
-  }
-  if (!valid.expirationDate(expirationDate).isPotentiallyValid) {
-    errorArray.push({
-      message: 'Please provide a valid expiration date of the card',
-      location: '#expiration',
-    })
-  }
-  if (
-    mainForm.querySelector('input[name="card-type"]:checked').value ===
-      'American Express' &&
-    !valid.cvv(mainForm.querySelector('#cvv').value, 4).isValid
-  ) {
-    errorArray.push({
-      message:
-        'Please provide a valid digit CID for your American Express card',
-      location: '#cvv',
-    })
-  } else if (!valid.cvv(mainForm.querySelector('#cvv').value, 3).isValid) {
-    errorArray.push({ message: 'Please provide a valid CVV', location: '#cvv' })
+    if (
+      !mainForm.querySelector('input[name="card-type"]:checked') ||
+      !valid.number(mainForm.querySelector('#card-number').value).isValid
+    ) {
+      errorArray.push({
+        message: 'Please provide a valid card number',
+        location: '#card-number',
+      })
+    }
+    if (
+      !valid.cardholderName(mainForm.querySelector('#card-name').value)
+        .isPotentiallyValid
+    ) {
+      errorArray.push({
+        message: 'Please provide a valid name on the card',
+        location: '#card-name',
+      })
+    }
+    if (!valid.expirationDate(expirationDate).isPotentiallyValid) {
+      errorArray.push({
+        message: 'Please provide a valid expiration date of the card',
+        location: '#expiration',
+      })
+    }
+    if (
+      mainForm.querySelector('input[name="card-type"]:checked').value ===
+        'American Express' &&
+      !valid.cvv(mainForm.querySelector('#cvv').value, 4).isValid
+    ) {
+      errorArray.push({
+        message:
+          'Please provide a valid digit CID for your American Express card',
+        location: '#cvv',
+      })
+    } else if (!valid.cvv(mainForm.querySelector('#cvv').value, 3).isValid) {
+      errorArray.push({
+        message: 'Please provide a valid CVV',
+        location: '#cvv',
+      })
+    }
   }
   if (errorArray.length >= 1) {
     errorArray.forEach((error) => {
@@ -333,41 +386,7 @@ document.querySelector('form.user-details').addEventListener('submit', (e) => {
       cvv: mainForm.querySelector('#cvv').value,
     }
 
-    signUpRequest(jsObjectFormData).then((data) => {
-      if (data.errors) {
-        //Handle input error placements
-      } else if (data.error) {
-        document.querySelector('.makeYourOwnModal .title').innerText = 'Error'
-        document
-          .querySelector('.makeYourOwnModal')
-          .classList.remove('is-success')
-        document
-          .querySelector('.makeYourOwnModal')
-          .classList.remove('hideClose')
-        document.querySelector('.makeYourOwnModal').classList.add('is-error')
-        document.querySelector(
-          '.makeYourOwnModal .modalContent'
-        ).innerHTML = `<p>${data.message}</p>`
-        openModal(true)
-      } else if (data.success) {
-        console.log(data)
-        document.querySelector('.makeYourOwnModal .title').innerText = 'Success'
-        document.querySelector('.makeYourOwnModal').classList.add('is-success')
-        document.querySelector('.makeYourOwnModal').classList.remove('is-error')
-        document.querySelector(
-          '.makeYourOwnModal .modalContent'
-        ).innerHTML = `<p>${data.message}</p>`
-        document.querySelector(
-          '.makeYourOwnModal .modalContent'
-        ).innerHTML += `<p>${data.authorizeMessage.message}</p>`
-        document.querySelector(
-          '.makeYourOwnModal .modalContent'
-        ).innerHTML += `<p>Please click <a href='https://craft-farmer-academy.ghost.io/'>here</a> to head to Craft Farmer Accademy.</p>`
-        openModal(false)
-      }
-      document.querySelector('.makeYourOwnModal').classList.add('hideClose')
-      loadingToggler()
-    })
+    signUpRequest(jsObjectFormData)
   }
 })
 // document.querySelector('#').addEventListener('keypress', (e) => {

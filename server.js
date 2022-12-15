@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import signUpRoute from './routes/signUpRoute.js'
+import subscribeRoute from './routes/subscribeRoute.js'
 import { errorHandler } from './middleware/errorMiddleware.js'
 
 dotenv.config()
@@ -20,7 +21,12 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname + '/frontend/index.html'))
 })
 
-app.post('/sign-up', signUpRoute)
+app.get('/subscribe', (req, res) => {
+  res.sendFile(path.join(__dirname + '/frontend/subscribe.html'))
+})
+
+app.use('/sign-up/', signUpRoute)
+app.use('/subscribe/', subscribeRoute)
 
 app.use(errorHandler)
 

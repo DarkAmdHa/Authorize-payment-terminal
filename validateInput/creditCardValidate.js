@@ -96,30 +96,43 @@ const validateForm = (req) => {
 
   if (!isEmailValid(email)) {
     errors.push({
-      param: 'email',
+      param: '#email',
       msg: 'Invalid email.',
     })
   }
+  if (cardType != 'PayPal') {
+    if (!valid.cardholderName(cardName).isPotentiallyValid) {
+      errors.push({
+        msg: 'Please provide a valid name on the card',
+        param: '#card-name',
+      })
+    }
 
-  if (!valid.number(cardNumber).isPotentiallyValid) {
-    errors.push({
-      param: 'cardNumber',
-      msg: 'Invalid credit card number.',
-    })
-  }
+    if (!valid.number(cardNumber).isPotentiallyValid) {
+      errors.push({
+        param: '#card-number',
+        msg: 'Invalid credit card number.',
+      })
+    }
 
-  if (!valid.cvv(cvv).isPotentiallyValid) {
-    errors.push({
-      param: 'cvv',
-      msg: 'Invalid CVV code.',
-    })
-  }
+    if (cardType.value === 'American Express' && !valid.cvv(cvv, 4).isValid) {
+      errors.push({
+        param: '#cvv',
+        msg: 'Please provide a valid digit CID for your American Express card.',
+      })
+    } else if (!valid.cvv(cvv, 3).isValid) {
+      errors.push({
+        param: '#cvv',
+        msg: 'Please provide a valid CVV',
+      })
+    }
 
-  if (!valid.expirationDate(expirationDate).isPotentiallyValid) {
-    errors.push({
-      param: 'expirationDate',
-      msg: 'Invalid expiration date.',
-    })
+    if (!valid.expirationDate(expirationDate).isPotentiallyValid) {
+      errors.push({
+        param: '#expiration',
+        msg: 'Invalid expiration date.',
+      })
+    }
   }
 
   return errors

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Terminal</title>
+    <style>
+      :root {
+        --primary: #00cc33;
+      }
+
+      @font-face {
+        font-family: 'Tahoma';
+        src: url('Tahoma.TTF');
+      }
+      @font-face {
+        font-family: 'Futura Bold';
+        src: url('Futura\ Bold.otf');
+      }
+
+      body {
+        background-color: #000;
+        color: #fff;
+        font-family: 'Futura Bold';
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        letter-spacing: 2px;
+      }
+
+      p,
+      h2.form-title,
+      label {
+        letter-spacing: 1.3px;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: auto;
+        padding: 30px 0;
+      }
+
+      .site-title h1 {
+        font-size: 15px;
+        text-transform: uppercase;
+        text-align: center;
+      }
+
+      .cta {
+        font-size: 25px;
+        text-transform: uppercase;
+        text-align: center;
+      }
+
+      .pricing-details {
+        text-align: center;
+      }
+
+      .primary-color {
+        color: var(--primary);
+      }
+
+      .h3 {
+        font-size: 18px;
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+
+      .h2 {
+        font-size: 25px;
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+
+      .status {
+        font-weight: 300;
+        font-family: 'Tahoma', sans-serif;
+        text-align: center;
+      }
+
+      /**/
+    </style>
+  </head>
+  <body>
+    <div class="PageOverlay"></div>
+    <main>
+      <div class="container">
+        <div class="site-title">
+          <h1>Craft Farmer Accademy</h1>
+        </div>
+        <div class="cta">
+          <h2>Become A Member</h2>
+        </div>
+        <div class="pricing-details">
+          <p class="primary-color h3">
+            Monthly Membership <br /><span class="h2">$250/Month</span>
+          </p>
+        </div>
+      </div>
+      <div class="status">
+        <h3 class="title"></h3>
+        <div class="statusText">Checking if transaction processed...</div>
+      </div>
+    </main>
+  </body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+  <script src="bundleSubscribe.js"></script>
+</html>

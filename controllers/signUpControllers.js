@@ -11,7 +11,8 @@ const SDKConstants = authorize.Constants
 // @route   N/A
 // @access  Public
 const checkUserExists = async (token, email, res) => {
-  const userExists = {}
+  console.log('Checking User Exists')
+  let userExists = {}
   const headers = { Authorization: `Ghost ${token}` }
   const response = await axios
     .get(`${process.env.GHOST_URL}/ghost/api/admin/members/`, { headers })
@@ -20,8 +21,9 @@ const checkUserExists = async (token, email, res) => {
         (member) => member.email === email
       )
       if (userExists) {
-        return res.status(422)
-        throw new Error('User already exists')
+        console.log('User Exists. Exiting.')
+      } else {
+        console.log('User Does Not Exist')
       }
     })
     .catch((error) => {
@@ -38,16 +40,28 @@ const checkUserExists = async (token, email, res) => {
         throw new Error('There was an issue with your connection')
       } else {
         // Something happened in setting up the request that triggered an Error
+        console.log(error)
         res.status(404)
         throw new Error('An error occured in setting up the request')
       }
     })
+
+  return userExists
 }
 
 // @desc    Create User on Ghost after successfull transaction
 // @route   N/A
 // @access  Public
-const createUser = async (token, firstName, lastName, email) => {
+const createUser = async (
+  token,
+  firstName,
+  lastName,
+  email,
+  res,
+  authorizeMessage
+) => {
+  console.log('Signing Up User On Ghost')
+
   //Create new user:
   // Make an authenticated request to create a user
   const url = `${process.env.GHOST_URL}/ghost/api/admin/members/`
@@ -88,26 +102,10 @@ const createUser = async (token, firstName, lastName, email) => {
     run()
   }
 
-  requestRetry(100, 100, function (error, data) {
-    if (error) {
-      // still failed after 100 retries
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        res.status(error.response.status)
-        throw new Error(error.response.data.message)
-      } else if (error.request) {
-        // The request was made but no response was received
-        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-        // http.ClientRequest in node.js
-        res.status(401)
-        throw new Error('There was an issue with your connection')
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        res.status(404)
-        throw new Error('Something happened in setting up the request')
-      }
-    } else if (data) {
+  requestRetry(1000, 100, function (error, data) {
+    if (data) {
+      console.log('User Signed Up On Ghost')
+
       // got successful result here
       res.status(200).json({
         success: true,
@@ -118,10 +116,9 @@ const createUser = async (token, firstName, lastName, email) => {
         authorizeMessage,
       })
     } else {
-      res.status(400)
-      throw new Error(
-        `Something Went Wrong. Your transaction has gone through successfully, but your account could not be created on our servers due to an error. Your transaction ID is ${10320}. Please contact us at craft@gmail with your email and our staff will help you.`
-      )
+      res.status(400).json({
+        message: `Something Went Wrong. Your transaction has gone through successfully, but your account could not be created on our servers due to an error. Your transaction ID is ${authorizeMessage.data.transactionId}. Please contact us as soon as possible, at craft@gmail with your email and our staff will help you.`,
+      })
     }
   })
 }
@@ -136,80 +133,238 @@ const createTransaction = async (
   token,
   firstName,
   lastName,
-  email
+  email,
+  res,
+  cardType
 ) => {
+  console.log('Creating Transaction')
   const amount = 1
   const merchantAuthenticationType =
     new ApiContracts.MerchantAuthenticationType()
   merchantAuthenticationType.setName(process.env.API_LOGIN_ID)
   merchantAuthenticationType.setTransactionKey(process.env.TRANSACTION_KEY)
 
-  const creditCard = new ApiContracts.CreditCardType()
-  creditCard.setCardNumber(cardNumber)
-  creditCard.setExpirationDate(expirationDate)
-  creditCard.setCardCode(cvv)
+  if (cardType === 'PayPal') {
+    var payPal = new ApiContracts.PayPalType()
+    payPal.setCancelUrl(`${process.env.TERMINAL_URL}/subscribe`)
+    payPal.setSuccessUrl(`${process.env.TERMINAL_URL}/subscribe`)
+    const paymentType = new ApiContracts.PaymentType()
+    paymentType.setPayPal(payPal)
 
-  const paymentType = new ApiContracts.PaymentType()
-  paymentType.setCreditCard(creditCard)
+    var transactionRequestType = new ApiContracts.TransactionRequestType()
+    transactionRequestType.setTransactionType(
+      ApiContracts.TransactionTypeEnum.AUTHONLYTRANSACTION
+    )
+    transactionRequestType.setPayment(paymentType)
+    transactionRequestType.setAmount(amount)
 
-  const transactionSetting = new ApiContracts.SettingType()
-  transactionSetting.setSettingName('recurringBilling')
-  transactionSetting.setSettingValue('false')
+    var userField_a = new ApiContracts.UserField()
+    userField_a.setName('email')
+    userField_a.setValue(email)
 
-  const transactionSettingList = []
-  transactionSettingList.push(transactionSetting)
+    var userField_b = new ApiContracts.UserField()
+    userField_b.setName('name')
+    userField_b.setValue(firstName + lastName)
 
-  const transactionSettings = new ApiContracts.ArrayOfSetting()
-  transactionSettings.setSetting(transactionSettingList)
+    var userFieldList = []
+    userFieldList.push(userField_a)
+    userFieldList.push(userField_b)
 
-  const transactionRequestType = new ApiContracts.TransactionRequestType()
-  transactionRequestType.setTransactionType(
-    ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
-  )
-  transactionRequestType.setPayment(paymentType)
-  transactionRequestType.setAmount(amount)
-  transactionRequestType.setTransactionSettings(transactionSettings)
+    var userFields = new ApiContracts.TransactionRequestType.UserFields()
+    userFields.setUserField(userFieldList)
 
-  const createRequest = new ApiContracts.CreateTransactionRequest()
-  createRequest.setMerchantAuthentication(merchantAuthenticationType)
-  createRequest.setTransactionRequest(transactionRequestType)
+    var createRequest = new ApiContracts.CreateTransactionRequest()
+    createRequest.setMerchantAuthentication(merchantAuthenticationType)
+    createRequest.setTransactionRequest(transactionRequestType)
 
-  const ctrl = new ApiControllers.CreateTransactionController(
-    createRequest.getJSON()
-  )
+    var ctrl = new ApiControllers.CreateTransactionController(
+      createRequest.getJSON()
+    )
 
-  ctrl.execute(() => {
-    const apiResponse = ctrl.getResponse()
-    const response = new ApiContracts.CreateTransactionResponse(apiResponse)
-    if (response != null) {
-      if (
-        response.getMessages().getResultCode() ==
-        ApiContracts.MessageTypeEnum.OK
-      ) {
-        if (response.getTransactionResponse().getMessages() != null) {
-          const authorizeMessage = {
-            message:
-              'Successfully created transaction with Transaction ID: ' +
-              response.getTransactionResponse().getTransId(),
-            data: {
-              responseCode: response.getTransactionResponse().getResponseCode(),
-              messageCode: response
+    ctrl.execute(function () {
+      var apiResponse = ctrl.getResponse()
+
+      var response = new ApiContracts.CreateTransactionResponse(apiResponse)
+
+      console.log(JSON.stringify(response, null, 2))
+
+      if (response != null) {
+        if (
+          response.getMessages().getResultCode() ==
+          ApiContracts.MessageTypeEnum.OK
+        ) {
+          if (response.getTransactionResponse().getMessages() != null) {
+            // got successful result here
+            res.status(200).json({
+              success: true,
+              refTransferId: response.getTransactionResponse().getTransId(),
+              secureAcceptanceURL: response
                 .getTransactionResponse()
-                .getMessages()
-                .getMessage()[0]
-                .getCode(),
-              description: response
+                .getSecureAcceptance()
+                .getSecureAcceptanceUrl(),
+              message:
+                'Successfully created transaction with Transaction ID: ' +
+                response.getTransactionResponse().getTransId() +
+                '<br> You will be redirected to the PayPal Express Checkout to complete the transaction, after which, your account will be created with the given email.',
+            })
+          } else {
+            const returnDataObject = {}
+            if (response.getTransactionResponse().getErrors() != null) {
+              returnDataObject.errorCode = response
                 .getTransactionResponse()
-                .getMessages()
-                .getMessage()[0]
-                .getDescription(),
-            },
+                .getErrors()
+                .getError()[0]
+                .getErrorCode()
+
+              returnDataObject.errorMessage = response
+                .getTransactionResponse()
+                .getErrors()
+                .getError()[0]
+                .getErrorText()
+
+              res.status(400).json({
+                message: `This error is from our payment gateway: <br> Error ${returnDataObject.errorCode}: ${returnDataObject.errorMessage}`,
+              })
+            }
           }
-
-          createUser(token, firstName, lastName, email)
         } else {
           const returnDataObject = {}
-          if (response.getTransactionResponse().getErrors() != null) {
+          if (
+            response.getTransactionResponse() != null &&
+            response.getTransactionResponse().getErrors() != null
+          ) {
+            returnDataObject.errorCode = response
+              .getTransactionResponse()
+              .getErrors()
+              .getError()[0]
+              .getErrorCode()
+            returnDataObject.errorMessage = response
+              .getTransactionResponse()
+              .getErrors()
+              .getError()[0]
+              .getErrorText()
+          } else {
+            returnDataObject.errorCode = response
+              .getMessages()
+              .getMessage()[0]
+              .getCode()
+            returnDataObject.errorMessage = response
+              .getMessages()
+              .getMessage()[0]
+              .getText()
+          }
+          res.status(400).json({
+            message: `This error is from our payment gateway: <br> Error ${
+              returnDataObject.errorCode || 'N/A'
+            }: ${returnDataObject.errorMessage || 'N/A'}`,
+          })
+        }
+      } else {
+        res
+          .status(400)
+          .json({ message: `No Response from the payment gateway` })
+      }
+    })
+  } else {
+    const creditCard = new ApiContracts.CreditCardType()
+    creditCard.setCardNumber(cardNumber)
+    creditCard.setExpirationDate(expirationDate)
+    creditCard.setCardCode(cvv)
+
+    const paymentType = new ApiContracts.PaymentType()
+    paymentType.setCreditCard(creditCard)
+
+    const transactionSetting = new ApiContracts.SettingType()
+    transactionSetting.setSettingName('recurringBilling')
+    transactionSetting.setSettingValue('false')
+
+    const transactionSettingList = []
+    transactionSettingList.push(transactionSetting)
+
+    const transactionSettings = new ApiContracts.ArrayOfSetting()
+    transactionSettings.setSetting(transactionSettingList)
+
+    const transactionRequestType = new ApiContracts.TransactionRequestType()
+    transactionRequestType.setTransactionType(
+      ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
+    )
+    transactionRequestType.setPayment(paymentType)
+    transactionRequestType.setAmount(amount)
+    transactionRequestType.setTransactionSettings(transactionSettings)
+
+    const createRequest = new ApiContracts.CreateTransactionRequest()
+    createRequest.setMerchantAuthentication(merchantAuthenticationType)
+    createRequest.setTransactionRequest(transactionRequestType)
+
+    const ctrl = new ApiControllers.CreateTransactionController(
+      createRequest.getJSON()
+    )
+
+    ctrl.execute(async () => {
+      const apiResponse = ctrl.getResponse()
+      const response = new ApiContracts.CreateTransactionResponse(apiResponse)
+      if (response != null) {
+        if (
+          response.getMessages().getResultCode() ==
+          ApiContracts.MessageTypeEnum.OK
+        ) {
+          if (response.getTransactionResponse().getMessages() != null) {
+            const authorizeMessage = {
+              message:
+                'Successfully created transaction with Transaction ID: ' +
+                response.getTransactionResponse().getTransId(),
+              data: {
+                transactionId: response.getTransactionResponse().getTransId(),
+                responseCode: response
+                  .getTransactionResponse()
+                  .getResponseCode(),
+                messageCode: response
+                  .getTransactionResponse()
+                  .getMessages()
+                  .getMessage()[0]
+                  .getCode(),
+                description: response
+                  .getTransactionResponse()
+                  .getMessages()
+                  .getMessage()[0]
+                  .getDescription(),
+              },
+            }
+
+            await createUser(
+              token,
+              firstName,
+              lastName,
+              email,
+              res,
+              authorizeMessage
+            )
+          } else {
+            const returnDataObject = {}
+            if (response.getTransactionResponse().getErrors() != null) {
+              returnDataObject.errorCode = response
+                .getTransactionResponse()
+                .getErrors()
+                .getError()[0]
+                .getErrorCode()
+
+              returnDataObject.errorMessage = response
+                .getTransactionResponse()
+                .getErrors()
+                .getError()[0]
+                .getErrorText()
+            }
+            res.status(400).json({
+              message: `This error is from our payment gateway: <br> Error ${returnDataObject.errorCode}: ${returnDataObject.errorMessage}`,
+            })
+            //   throw new Error(`This error is from our payment gateway: <br> Error ${returnDataObject.errorCode}: ${returnDataObject.errorMessage}`)
+          }
+        } else {
+          const returnDataObject = {}
+          if (
+            response.getTransactionResponse() != null &&
+            response.getTransactionResponse().getErrors() != null
+          ) {
             returnDataObject.errorCode = response
               .getTransactionResponse()
               .getErrors()
@@ -221,51 +376,33 @@ const createTransaction = async (
               .getErrors()
               .getError()[0]
               .getErrorText()
+          } else {
+            returnDataObject.errorCode = response
+              .getMessages()
+              .getMessage()[0]
+              .getCode()
+            returnDataObject.errorMessage = response
+              .getMessages()
+              .getMessage()[0]
+              .getText()
           }
           res.status(400).json({
-            error: true,
-            message: 'Failed Transaction.',
-            data: returnDataObject,
+            message: `This error is from our payment gateway: <br> Error ${returnDataObject.errorCode}: ${returnDataObject.errorMessage}`,
           })
+
+          // throw new Error(
+          //   `This error is from our payment gateway: <br> Error ${returnDataObject.errorCode}: ${returnDataObject.errorMessage}`
+          // )
         }
       } else {
-        const returnDataObject = {}
-        if (
-          response.getTransactionResponse() != null &&
-          response.getTransactionResponse().getErrors() != null
-        ) {
-          returnDataObject.errorCode = response
-            .getTransactionResponse()
-            .getErrors()
-            .getError()[0]
-            .getErrorCode()
+        res
+          .status(400)
+          .json({ message: `No Response from the payment gateway` })
 
-          returnDataObject.errorMessage = response
-            .getTransactionResponse()
-            .getErrors()
-            .getError()[0]
-            .getErrorText()
-        } else {
-          returnDataObject.errorCode = response
-            .getMessages()
-            .getMessage()[0]
-            .getCode()
-          returnDataObject.errorMessage = response
-            .getMessages()
-            .getMessage()[0]
-            .getText()
-        }
-
-        res.status(400).json({
-          error: true,
-          message: 'Failed Transaction.',
-          data: returnDataObject,
-        })
+        //   throw new Error(`No Response from the payment gateway`)
       }
-    } else {
-      res.status(400).json({ error: true, message: 'No Response.' })
-    }
-  })
+    })
+  }
 }
 
 // @desc    Validate Transaction, and Upon success, Create User
@@ -287,7 +424,6 @@ const signUpUser = asyncHandler(async (req, res) => {
     expirationDate,
     cvv,
   } = req.body
-
   const validationErrors = validateForm(req)
   if (validationErrors.length > 0) {
     res.status(400).json({ errors: validationErrors })
@@ -297,17 +433,24 @@ const signUpUser = asyncHandler(async (req, res) => {
   const token = generateToken()
 
   //Check for Existing User Email On Ghost
-  checkUserExists(token, email, res)
+  const userExists = await checkUserExists(token, email, res)
 
+  if (userExists) {
+    res.status(422)
+    throw new Error('User already exists')
+    return
+  }
   //Create Transaction
-  createTransaction(
+  await createTransaction(
     cardNumber,
     expirationDate,
     cvv,
     token,
     firstName,
     lastName,
-    email
+    email,
+    res,
+    cardType
   )
 })
 
